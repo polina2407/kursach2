@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">🏥 Информационная система больницы</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{% url 'index' %}" class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" name="search" class="form-control form-control-lg"
+                           placeholder="🔍 Поиск по фамилии, имени, отчеству или номеру палаты..."
+                           value="{{ search_query|default:'' }}">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">🔍 Найти</button>
+                </div>
+            </form>
+            {% if search_query %}
+            <div class="mt-2">
+                <a href="{% url 'index' %}" class="btn btn-outline-secondary btn-sm">✕ Сбросить поиск</a>
+                <span class="text-muted ms-2">Найдено: {{ found_patients|length }} пациент(ов)</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if search_query and found_patients %}
+    <div class="card mb-4 shadow border-primary">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">🔍 Результаты поиска: "{{ search_query }}"</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for item in found_patients %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 border-start border-4 border-primary shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">{{ item.patient.last_name }} {{ item.patient.first_name }} {{ item.patient.middle_name }}</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="card-text mb-1">
+                                        <strong>🏥 Отделение:</strong> {{ item.department.name }}<br>
+                                        <strong>🏠 Палата:</strong> №{{ item.patient.room.number|default:"—" }}<br>
+                                        <strong>{% if item.patient.gender == 'M' %}👨{% else %}👩{% endif %} Пол:</strong> {{ item.patient.get_gender_display }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="card-text mb-1">
+                                        <strong>🎂 Возраст:</strong> {{ item.patient.get_age }} лет<br>
+                                        <strong>📋 Категория:</strong> {{ item.patient.get_age_category_display_ru }}
+                                    </p>
+                                </div>
+                            </div>
+                            {% if item.patient.allergy %}
+                            <div class="alert alert-danger py-2 mb-2">
+                                <small>⚠️ {{ item.patient.allergy }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <div class="d-grid gap-2 d-md-flex">
+                                <a href="{% url 'patient_detail' item.patient.id %}"
+                                   class="btn btn-sm btn-outline-primary flex-fill">
+                                    👁️ Подробнее
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger flex-fill"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#dischargeModalSearch{{ item.patient.id }}">
+                                    📤 Выписать
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="dischargeModalSearch{{ item.patient.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title">📤 Выписка пациента</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="fw-bold">{{ item.patient.last_name }} {{ item.patient.first_name }}</p>
+                                <p class="text-muted">Палата №{{ item.patient.room.number }}</p>
+                                <hr>
+                                <p>Вы уверены, что хотите выписать пациента?</p>
+                                <form method="POST" action="{% url 'discharge_patient' item.patient.id %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Диагноз/причина выписки:</label>
+                                        <textarea class="form-control" name="diagnosis" rows="2" required></textarea>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-danger">✅ Да, выписать</button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Отмена</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% elif search_query and not found_patients %}
+    <div class="alert alert-warning text-center">
+        <h4>😕 По вашему запросу ничего не найдено</h4>
+        <p class="mb-0">Попробуйте изменить поисковый запрос</p>
+    </div>
+    {% endif %}
+
+    {% if not search_query %}
+    <h3 class="mb-3">🏥 Отделения</h3>
+    <div class="row">
+        {% for dep in departments %}
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ dep.name }}</h5>
+                    <span class="badge bg-light text-dark">{{ dep.patient_count }} пациентов</span>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar bg-info" style="width: {{ dep.fill_percent }}%;">
+                            {{ dep.fill_percent }}% ({{ dep.patient_count }} / {{ dep.total_capacity }})
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <a href="{% url 'add_patient' %}?department={{ dep.id }}" class="btn btn-primary w-100">
+                                ➕ Добавить пациента
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-success w-100"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#patientsModal{{ dep.id }}">
+                                👥 Пациенты ({{ dep.patient_count }})
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'room_status' %}?department={{ dep.id }}" class="btn btn-secondary w-100">
+                                🛏️ Состояние палат
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="patientsModal{{ dep.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">👥 Пациенты отделения "{{ dep.name }}"</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        {% if dep.patients %}
+                        <div class="row">
+                            {% for patient in dep.patients %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-start border-4 border-primary">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold">{{ patient.last_name }} {{ patient.first_name }}</h6>
+                                        <p class="card-text small text-muted mb-1">
+                                            🏠 Палата №{{ patient.room.number|default:"—" }}<br>
+                                            {% if patient.gender == 'M' %}👨{% else %}👩{% endif %} {{ patient.get_gender_display }}<br>
+                                            🎂 {{ patient.get_age }} лет ({{ patient.get_age_category_display_ru }})
+                                        </p>
+                                        {% if patient.allergy %}
+                                        <p class="card-text small text-danger">⚠️ {{ patient.allergy }}</p>
+                                        {% endif %}
+                                        <div class="d-grid gap-2">
+                                            <a href="{% url 'patient_detail' patient.id %}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                👁️ Подробнее
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#dischargeModal{{ patient.id }}"
+                                                    data-bs-dismiss="modal">
+                                                📤 Выписать
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted">📭 В отделении нет пациентов</p>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% for patient in dep.patients %}
+        <div class="modal fade" id="dischargeModal{{ patient.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">📤 Выписка пациента</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fw-bold">{{ patient.last_name }} {{ patient.first_name }} {{ patient.middle_name }}</p>
+                        <p class="text-muted">Палата №{{ patient.room.number }}</p>
+                        <hr>
+                        <p>Вы уверены, что хотите выписать пациента?</p>
+                        <form method="POST" action="{% url 'discharge_patient' patient.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="diagnosis{{ patient.id }}" class="form-label">Диагноз/причина выписки:</label>
+                                <textarea class="form-control" id="diagnosis{{ patient.id }}" name="diagnosis" rows="2" required></textarea>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-danger">✅ Да, выписать</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Отмена</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

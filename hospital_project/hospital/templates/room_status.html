@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mb-4">🏥 Состояние палат</h1>
+
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">{{ total_rooms }}</h3>
+                    <p class="card-text">Всего палат</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">{{ empty_rooms }}</h3>
+                    <p class="card-text">Свободных палат</p>
+                    <small>{{ empty_rooms|floatformat:1|add:"0" }}% от общего числа</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">{{ partial_rooms }}</h3>
+                    <p class="card-text">Частично заполнены</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-danger h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">{{ full_rooms }}</h3>
+                    <p class="card-text">Полностью заполнены</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">📈 Заполненность больницы</h5>
+            <p>Всего пациентов: <strong>{{ total_patients }}</strong> из {{ total_capacity }} мест</p>
+            <div class="progress" style="height: 30px;">
+                <div class="progress-bar bg-success" style="width: {{ empty_rooms|floatformat:0|add:'0' }}%;">
+                    {{ empty_rooms }} свободных
+                </div>
+                <div class="progress-bar bg-warning" style="width: {{ partial_rooms|floatformat:0|add:'0' }}%;">
+                    {{ partial_rooms }} частично
+                </div>
+                <div class="progress-bar bg-danger" style="width: {{ full_rooms|floatformat:0|add:'0' }}%;">
+                    {{ full_rooms }} заполнено
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-center">
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">🏥 Выберите отделение:</label>
+                    <select name="department" class="form-select form-select-lg" onchange="this.form.submit()">
+                        <option value="">Все отделения</option>
+                        {% for dep_stat in departments_stats %}
+                        <option value="{{ dep_stat.department.id }}" {% if selected_department == dep_stat.department.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dep_stat.department.name }} ({{ dep_stat.total_patients }}/{{ dep_stat.total_capacity }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <a href="{% url 'room_status' %}" class="btn btn-outline-secondary btn-lg w-100">
+                        ✕ Сбросить фильтр
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    {% for dep_stat in departments_stats %}
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ dep_stat.department.name }}</h5>
+            <span class="badge bg-light text-dark">{{ dep_stat.total_patients }} / {{ dep_stat.total_capacity }}</span>
+        </div>
+        <div class="card-body">
+
+            <div class="progress mb-3" style="height: 25px;">
+                <div class="progress-bar bg-info" style="width: {{ dep_stat.fill_percent }}%;">
+                    {{ dep_stat.fill_percent }}% заполнено
+                </div>
+            </div>
+
+
+            <div class="row">
+                {% for room in dep_stat.rooms %}
+                <div class="col-md-3 col-sm-4 mb-3">
+                    {% with patients=room.patient_set.all %}
+                    {% with occupancy=patients.count %}
+                    <div class="card h-100 {% if occupancy == 0 %}border-success{% elif occupancy >= 4 %}border-danger{% else %}border-warning{% endif %}"
+                         style="border-width: 3px; cursor: pointer;"
+                         data-bs-toggle="modal"
+                         data-bs-target="#roomModal{{ room.id }}">
+
+                        <div class="card-body text-center p-3">
+                            <h6 class="card-title mb-2">
+                                🏠 Палата {{ room.number }}
+                            </h6>
+                            <div class="mb-2">
+                                {% if occupancy == 0 %}
+                                    <span class="badge bg-success">Свободна</span>
+                                {% elif occupancy >= 4 %}
+                                    <span class="badge bg-danger">Заполнена</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Частично</span>
+                                {% endif %}
+                            </div>
+                            <p class="card-text small mb-0">
+                                <strong>{{ occupancy }}</strong> из {{ room.capacity }}
+                            </p>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar {% if occupancy == 0 %}bg-success{% elif occupancy >= 4 %}bg-danger{% else %}bg-warning{% endif %}"
+                                     style="width: {{ occupancy|floatformat:0|add:'0' }}%;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="modal fade" id="roomModal{{ room.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header {% if occupancy == 0 %}bg-success{% elif occupancy >= 4 %}bg-danger{% else %}bg-warning{% endif %} text-white">
+                                    <h5 class="modal-title">🏠 Палата {{ room.number }} - {{ dep_stat.department.name }}</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Вместимость:</strong> {{ room.capacity }} мест</p>
+                                    <p><strong>Заполнено:</strong> {{ occupancy }} мест</p>
+                                    <p><strong>Свободно:</strong> {{ room.capacity|add:"-"|add:occupancy }} мест</p>
+
+                                    {% if patients %}
+                                    <hr>
+                                    <h6>👥 Жильцы:</h6>
+                                    <ul class="list-group">
+                                        {% for patient in patients %}
+                                        <li class="list-group-item">
+                                            <strong>{{ patient.last_name }} {{ patient.first_name }}</strong><br>
+                                            <small class="text-muted">
+                                                {% if patient.gender == 'M' %}👨{% else %}👩{% endif %} {{ patient.get_gender_display }} •
+                                                {{ patient.get_age }} лет ({{ patient.get_age_category_display_ru }})
+                                            </small>
+                                            {% if patient.allergy %}
+                                            <br><small class="text-danger">⚠️ {{ patient.allergy }}</small>
+                                            {% endif %}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    <div class="alert alert-success mt-3">
+                                        ✅ Палата свободна
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                    {% if occupancy < room.capacity %}
+                                    <a href="{% url 'add_patient' %}?department={{ dep_stat.department.id }}" class="btn btn-primary">
+                                        ➕ Добавить пациента
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endwith %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

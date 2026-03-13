@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">👤 Информация о пациенте</h4>
+                </div>
+                <div class="card-body">
+                    <!-- ФИО -->
+                    <div class="mb-4">
+                        <h3 class="fw-bold">{{ patient.last_name }} {{ patient.first_name }} {{ patient.middle_name }}</h3>
+                    </div>
+
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-3">📋 Основная информация</h6>
+                                    <p><strong>🎂 Дата рождения:</strong> {{ patient.birth_date }}</p>
+                                    <p><strong>🎂 Возраст:</strong> {{ patient.get_age }} лет</p>
+                                    <p><strong>👤 Категория:</strong> {{ patient.get_age_category_display_ru }}</p>
+                                    <p><strong>{% if patient.gender == 'M' %}👨{% else %}👩{% endif %} Пол:</strong> {{ patient.get_gender_display }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-3">🏥 Размещение</h6>
+                                    <p><strong>🏥 Отделение:</strong> {{ patient.department.name }}</p>
+                                    <p><strong>🏠 Палата:</strong> №{{ patient.room.number|default:"Не назначена" }}</p>
+                                    <p><strong>🛏️ Вместимость палаты:</strong> {{ patient.room.capacity|default:"—" }} мест</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    {% if patient.allergy %}
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">⚠️ Аллергия/Особенности</h6>
+                        <p class="mb-0">{{ patient.allergy }}</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <h6 class="alert-heading">✅ Аллергий не указано</h6>
+                    </div>
+                    {% endif %}
+
+
+                    {% if patient.room %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">👥 Соседи по палате №{{ patient.room.number }}</h6>
+                        </div>
+                        <div class="card-body">
+                            {% with roommates=patient.room.patient_set.all %}
+                            {% if roommates.count > 1 %}
+                            <ul class="list-group">
+                                {% for roommate in roommates %}
+                                {% if roommate.id != patient.id %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>{{ roommate.last_name }} {{ roommate.first_name }}</span>
+                                    <small class="text-muted">
+                                        {% if roommate.gender == 'M' %}👨{% else %}👩{% endif %} 
+                                        {{ roommate.get_age }} лет
+                                    </small>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+                            </ul>
+                            <p class="text-muted small mt-2">
+                                🛏️ Заполненность: {{ roommates.count }} из {{ patient.room.capacity }} мест
+                            </p>
+                            {% else %}
+                            <p class="text-muted mb-0">🎉 Пациент находится в палате один</p>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'index' %}" class="btn btn-secondary">
+                            ← На главную
+                        </a>
+                        <a href="{% url 'discharge_patient' patient.id %}" class="btn btn-danger">
+                            📤 Выписать пациента
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Размещение пациента</h2>
+
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">👤 Пациент</h5>
+            <p class="mb-0">
+                <strong>{{ patient.last_name }} {{ patient.first_name }} {{ patient.middle_name }}</strong><br>
+                <span class="text-muted">
+                    {% if patient.gender == 'M' %}👨{% else %}👩{% endif %} {{ patient.get_gender_display }} •
+                    🎂 {{ patient.get_age }} лет ({{ patient.get_age_category_display_ru }})
+                </span>
+            </p>
+        </div>
+    </div>
+
+
+    <div class="mb-4">
+        <button type="button" class="btn btn-success btn-lg me-3" data-bs-toggle="modal" data-bs-target="#autoModal">
+            🤖 Автоматический выбор
+        </button>
+        <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#manualModal">
+            🗺️ Ручной выбор
+        </button>
+    </div>
+
+
+    <div class="modal fade" id="autoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">🤖 Автоматическое размещение</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Система автоматически подберёт подходящую палату.</p>
+                    <form method="POST" action="{% url 'select_room' patient.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="mode" value="auto">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">🤖 Подобрать палату</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="manualModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">🗺️ Карта палат</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Легенда -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success" style="width: 30px; height: 30px; margin-right: 10px; border-radius: 5px;"></div>
+                                <span>Свободна</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-danger" style="width: 30px; height: 30px; margin-right: 10px; border-radius: 5px;"></div>
+                                <span>Заполнена</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-warning" style="width: 30px; height: 30px; margin-right: 10px; border-radius: 5px;"></div>
+                                <span>Несовместима</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        {% for room_info in rooms_info %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if room_info.full %}border-danger{% elif not room_info.compatible %}border-warning{% else %}border-success{% endif %}"
+                                 style="border-width: 3px; {% if not room_info.full and room_info.compatible %}cursor: pointer;{% endif %}"
+                                 {% if not room_info.full and room_info.compatible %}
+                                 onclick="showConfirmModal({{ room_info.room.id }})"
+                                 {% endif %}>
+
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">🏠 Палата {{ room_info.room.number }}</h6>
+                                    <p class="mb-2">
+                                        {% if room_info.full %}
+                                            <span class="badge bg-danger">Заполнена</span>
+                                        {% elif not room_info.compatible %}
+                                            <span class="badge bg-warning text-dark">Несовместима</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Свободна</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="mb-0">
+                                        <small class="text-muted">
+                                            {{ room_info.free_spots }} из {{ room_info.room.capacity }} мест
+                                        </small>
+                                    </p>
+
+                                    {% if room_info.patients %}
+                                    <hr>
+                                    <small class="text-muted">
+                                        <strong>Жильцы:</strong><br>
+                                        {% for p in room_info.patients %}
+                                            {{ p.last_name }} {{ p.first_name }}<br>
+                                        {% endfor %}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'index' %}" class="btn btn-secondary">← Назад</a>
+</div>
+
+{% for room_info in rooms_info %}
+{% if not room_info.full and room_info.compatible %}
+<div class="modal fade" id="confirmRoomModal{{ room_info.room.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">🏠 Подтверждение</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fw-bold">Заселить пациента в палату №{{ room_info.room.number }}?</p>
+
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Пациент:</strong> {{ patient.last_name }} {{ patient.first_name }}</p>
+                        <p class="mb-1"><strong>Палата:</strong> №{{ room_info.room.number }}</p>
+                        <p class="mb-0"><strong>Свободно мест:</strong> {{ room_info.free_spots }} из {{ room_info.room.capacity }}</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{% url 'select_room' patient.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="mode" value="manual">
+                    <input type="hidden" name="room_id" value="{{ room_info.room.id }}">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">✅ Да, заселить</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<script>
+function showConfirmModal(roomId) {
+    var modal = new bootstrap.Modal(document.getElementById('confirmRoomModal' + roomId));
+    modal.show();
+}
+</script>
+{% endblock %}
