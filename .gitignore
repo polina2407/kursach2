@@ -2,6 +2,11 @@
 # Database
 db.sqlite3
 
+# Environment variables
+.env
+.env.local
+*.env.*
+
 # Python
 __pycache__/
 *.pyc
@@ -11,12 +16,6 @@ __pycache__/
 env/
 venv/
 .venv/
-.ENV
-.ENV.local
-.env
-.env.local
-.env.*
-.python-version
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
@@ -27,11 +26,7 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+.git/modules/
 .DS_Store
 Thumbs.db
 ```
