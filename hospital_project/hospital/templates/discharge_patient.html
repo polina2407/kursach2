@@ -1,29 +1,39 @@
-<!-- hospital/templates/discharge_patient.html -->
 {% extends 'base.html' %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Выписка пациента</h2>
+    <h2>📤 Выписка пациента</h2>
 
-    <div class="card mb-4">
+    <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <h5 class="card-title">{{ patient.last_name }} {{ patient.first_name }} {{ patient.middle_name }}</h5>
             <p class="card-text">
-                <strong>Отделение:</strong> {{ patient.department.name }}<br>
-                <strong>Палата:</strong> {{ patient.room.number|default:"Не назначена" }}<br>
-                <strong>Дата рождения:</strong> {{ patient.birth_date }}<br>
-                <strong>Пол:</strong> {{ patient.get_gender_display }}
+                <strong>🏥 Отделение:</strong> {{ patient.department.name }}<br>
+                <strong>🏠 Палата:</strong> {{ patient.room.number|default:"Не назначена" }}<br>
+                <strong>🎂 Дата рождения:</strong> {{ patient.birth_date }}<br>
+                <strong>{% if patient.gender == 'M' %}👨{% else %}👩{% endif %} Пол:</strong> {{ patient.get_gender_display }}
             </p>
         </div>
     </div>
 
-    <form method="POST">
+    <!-- Форма ввода кода врача -->
+    <form method="POST" id="dischargeForm">
         {% csrf_token %}
+        
         <div class="mb-3">
-            <label for="diagnosis" class="form-label">Диагноз / Причина выписки</label>
+            <label for="{{ code_form.code.id_for_label }}" class="form-label">🔑 Код доступа врача *</label>
+            {{ code_form.code }}
+            {% if code_form.code.errors %}
+                <div class="text-danger small">{{ code_form.code.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="diagnosis" class="form-label">📋 Диагноз / Причина выписки *</label>
             <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required></textarea>
         </div>
-        <button type="submit" class="btn btn-success">Подтвердить выписку</button>
+        
+        <button type="submit" class="btn btn-success">✅ Подтвердить выписку</button>
         <a href="{% url 'index' %}" class="btn btn-secondary">Отмена</a>
     </form>
 </div>
