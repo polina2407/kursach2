@@ -2,8 +2,10 @@
 # Database
 db.sqlite3
 
-# Django migrations
-hospital/migrations/
+# Environment
+.env
+.env.local
+*.env.*
 
 # Dependencies
 .venv/
@@ -13,31 +15,16 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Logs
+# Logs and temp files
 *.log
-
-# Environment
-.env
-.env.local
-*.env.*
+*.tmp
+*.swp
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Coverage
-.coverage
-htmlcov/
-coverage/
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
 ```
