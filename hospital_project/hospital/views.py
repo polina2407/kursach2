@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Count, Q, Sum
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
 from .models import Department, Room, Patient, Doctor, DischargeHistory
-from .forms import PatientForm, DoctorCodeForm
+from .forms import PatientForm, DoctorCodeForm, DoctorLoginForm
 from datetime import date
 
 
@@ -125,20 +126,51 @@ def index(request):
     return render(request, "index.html", context)
 
 
+def doctor_login(request):
+    """Вход врача по коду доступа"""
+    if request.method == 'POST':
+        form = DoctorLoginForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data['code']
+            doctor = Doctor.authenticate_by_code(code)
+            
+            if doctor:
+                # Сохраняем ID врача в сессии
+                request.session['doctor_id'] = doctor.id
+                messages.success(request, f"✅ Добро пожаловать, {doctor.user.get_full_name() or doctor.user.username}!")
+                return redirect('index')
+    else:
+        form = DoctorLoginForm()
+    
+    return render(request, 'doctor_login.html', {'form': form})
+
+
 @login_required
 def add_patient(request):
     """Добавление пациента с проверкой кода врача"""
     doctor = None
     
+    # Проверяем, есть ли врач в сессии
+    if request.session.get('doctor_id'):
+        try:
+            doctor = Doctor.objects.get(id=request.session['doctor_id'], is_active=True)
+        except Doctor.DoesNotExist:
+            del request.session['doctor_id']
+    
     if request.method == "POST":
-        # Проверяем код врача
-        code_form = DoctorCodeForm(request.POST)
-        if code_form.is_valid():
-            doctor = Doctor.authenticate_by_code(code_form.cleaned_data['code'])
-            request.session['doctor_id'] = doctor.id
-        else:
-            messages.error(request, f"❌ Ошибка кода: {code_form.errors.get('code', ['Неверный код'])[0]}")
-            return render(request, "add_patient.html", {"form": PatientForm(), "code_form": code_form})
+        # Если врач еще не аутентифицирован, проверяем код
+        if not doctor:
+            code_form = DoctorCodeForm(request.POST)
+            if code_form.is_valid():
+                doctor = Doctor.authenticate_by_code(code_form.cleaned_data['code'])
+                if doctor:
+                    request.session['doctor_id'] = doctor.id
+                else:
+                    messages.error(request, f"❌ Ошибка кода: Неверный код доступа")
+                    return render(request, "add_patient.html", {"form": PatientForm(), "code_form": code_form})
+            else:
+                messages.error(request, f"❌ Ошибка кода: {code_form.errors.get('code', ['Неверный код'])[0]}")
+                return render(request, "add_patient.html", {"form": PatientForm(), "code_form": code_form})
         
         # Если код верный, обрабатываем форму пациента
         form = PatientForm(request.POST)
@@ -148,6 +180,8 @@ def add_patient(request):
             patient.save()
             messages.success(request, f"✅ Пациент {patient.last_name} {patient.first_name} зарегистрирован")
             return redirect("select_room", patient_id=patient.id)
+        else:
+            messages.error(request, "❌ Исправьте ошибки в форме пациента")
     else:
         form = PatientForm()
         code_form = DoctorCodeForm()
@@ -155,7 +189,7 @@ def add_patient(request):
         if dep_id:
             form.fields['department'].initial = dep_id
 
-    return render(request, "add_patient.html", {"form": form, "code_form": code_form})
+    return render(request, "add_patient.html", {"form": form, "code_form": code_form, "doctor": doctor})
 
 
 @login_required
@@ -226,14 +260,27 @@ def discharge_patient(request, patient_id):
     patient = get_object_or_404(Patient, id=patient_id)
     doctor = None
 
+    # Проверяем, есть ли врач в сессии
+    if request.session.get('doctor_id'):
+        try:
+            doctor = Doctor.objects.get(id=request.session['doctor_id'], is_active=True)
+        except Doctor.DoesNotExist:
+            del request.session['doctor_id']
+
     if request.method == "POST":
-        # Проверяем код врача
-        code_form = DoctorCodeForm(request.POST)
-        if code_form.is_valid():
-            doctor = Doctor.authenticate_by_code(code_form.cleaned_data['code'])
-        else:
-            messages.error(request, f"❌ Ошибка кода: {code_form.errors.get('code', ['Неверный код'])[0]}")
-            return render(request, "discharge_patient.html", {"patient": patient, "code_form": code_form})
+        # Если врач еще не аутентифицирован, проверяем код
+        if not doctor:
+            code_form = DoctorCodeForm(request.POST)
+            if code_form.is_valid():
+                doctor = Doctor.authenticate_by_code(code_form.cleaned_data['code'])
+                if doctor:
+                    request.session['doctor_id'] = doctor.id
+                else:
+                    messages.error(request, f"❌ Ошибка кода: Неверный код доступа")
+                    return render(request, "discharge_patient.html", {"patient": patient, "code_form": code_form})
+            else:
+                messages.error(request, f"❌ Ошибка кода: {code_form.errors.get('code', ['Неверный код'])[0]}")
+                return render(request, "discharge_patient.html", {"patient": patient, "code_form": code_form})
 
         disease = request.POST.get('diagnosis', 'Не указано')
 
@@ -252,7 +299,7 @@ def discharge_patient(request, patient_id):
     else:
         code_form = DoctorCodeForm()
 
-    return render(request, "discharge_patient.html", {"patient": patient, "code_form": code_form})
+    return render(request, "discharge_patient.html", {"patient": patient, "code_form": code_form, "doctor": doctor})
 
 
 def room_status(request):
