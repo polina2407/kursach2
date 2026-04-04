@@ -2,41 +2,42 @@
 # Database
 db.sqlite3
 
-# Python
-*.pyc
+# Django migrations
+hospital/migrations/
+
+# Dependencies
+.venv/
+venv/
 __pycache__/
+*.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.venv.bak/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+
+# Logs
 *.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Django
-*.pot
-*.po
-*~
-.pytest_cache/
+# Coverage
+.coverage
 htmlcov/
-.coverage*
-coverage/*
-!.coveragerc
+coverage/
 
-# Migration files (except __init__.py)
-hospital/migrations/*.py
-!hospital/migrations/__init__.py
+# Build artifacts
+dist/
+build/
+*.egg-info/
 ```
