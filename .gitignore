@@ -2,31 +2,36 @@
 # Database
 db.sqlite3
 
-# Dependencies
-.venv/
-venv/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Environment
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.local
 .env
 .env.local
-*.env.*
-
-# Editors
-.vscode/
+.env.*
+.python-version
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
 .idea/
-
-# Build artifacts
-dist/
-build/
-target/
-*.egg-info/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 ```
