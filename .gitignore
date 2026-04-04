@@ -2,11 +2,6 @@
 # Database
 db.sqlite3
 
-# Environment
-.env
-.env.local
-*.env.*
-
 # Dependencies
 .venv/
 venv/
@@ -20,11 +15,18 @@ __pycache__/
 *.tmp
 *.swp
 
+# Environment
+.env
+.env.local
+*.env.*
+
 # Editors
 .vscode/
 .idea/
 
-# OS
-.DS_Store
-Thumbs.db
+# Build artifacts
+dist/
+build/
+target/
+*.egg-info/
 ```
