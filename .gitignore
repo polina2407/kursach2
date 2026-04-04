@@ -3,14 +3,16 @@
 db.sqlite3
 
 # Python
-__pycache__/
 *.pyc
+__pycache__/
 *.pyo
 *.pyd
 .Python
 env/
 venv/
 .venv/
+.ENV
+.venv.bak/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
@@ -26,46 +28,15 @@ Thumbs.db
 
 # Django
 *.pot
-*.py[co]
+*.po
 *~
-.pydevproject
 .pytest_cache/
 htmlcov/
-.coverage.*
+.coverage*
+coverage/*
+!.coveragerc
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# Migration files (except __init__.py)
+hospital/migrations/*.py
+!hospital/migrations/__init__.py
 ```
