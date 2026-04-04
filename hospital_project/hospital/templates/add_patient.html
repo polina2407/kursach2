@@ -9,53 +9,74 @@
                     <h4 class="mb-0">➕ Добавление пациента</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" id="addPatientForm">
+                    <form method="POST">
                         {% csrf_token %}
-
-                        <div class="mb-3">
-                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Фамилия *</label>
-                            {{ form.last_name }}
-                            {% if form.last_name.errors %}
-                                <div class="text-danger small">{{ form.last_name.errors }}</div>
+                        
+                        <h5 class="mb-3">🔑 Код доступа врача</h5>
+                        <div class="mb-4">
+                            <label for="{{ code_form.code.id_for_label }}" class="form-label">Код *</label>
+                            {{ code_form.code }}
+                            {% if code_form.code.errors %}
+                                <div class="text-danger small">{{ code_form.code.errors }}</div>
                             {% endif %}
+                            <small class="text-muted">Введите код вашего доступа (например: DOC001)</small>
                         </div>
+                        
+                        <hr>
+                        
+                        <h5 class="mb-3">📋 Данные пациента</h5>
 
-                        <div class="mb-3">
-                            <label for="{{ form.first_name.id_for_label }}" class="form-label">Имя *</label>
-                            {{ form.first_name }}
-                            {% if form.first_name.errors %}
-                                <div class="text-danger small">{{ form.first_name.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.middle_name.id_for_label }}" class="form-label">Отчество</label>
-                            {{ form.middle_name }}
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.birth_date.id_for_label }}" class="form-label">Дата рождения *</label>
-                            {{ form.birth_date }}
-                            {% if form.birth_date.errors %}
-                                <div class="text-danger small">{{ form.birth_date.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Пол *</label>
-                            <div class="d-flex gap-4">
-                                {% for radio in form.gender %}
-                                    <div class="form-check">
-                                        {{ radio.tag }}
-                                        <label class="form-check-label" for="{{ radio.id_for_label }}">
-                                            {{ radio.choice_label }}
-                                        </label>
-                                    </div>
-                                {% endfor %}
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Фамилия *</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                {% endif %}
                             </div>
-                            {% if form.gender.errors %}
-                                <div class="text-danger small">{{ form.gender.errors }}</div>
-                            {% endif %}
+
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">Имя *</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.middle_name.id_for_label }}" class="form-label">Отчество</label>
+                                {{ form.middle_name }}
+                                {% if form.middle_name.errors %}
+                                    <div class="text-danger small">{{ form.middle_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.birth_date.id_for_label }}" class="form-label">Дата рождения *</label>
+                                {{ form.birth_date }}
+                                {% if form.birth_date.errors %}
+                                    <div class="text-danger small">{{ form.birth_date.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Пол *</label>
+                                <div class="d-flex gap-4">
+                                    {% for radio in form.gender %}
+                                        <div class="form-check">
+                                            {{ radio.tag }}
+                                            <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                                {{ radio.choice_label }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.gender.errors %}
+                                    <div class="text-danger small">{{ form.gender.errors }}</div>
+                                {% endif %}
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -69,37 +90,18 @@
                         <div class="mb-3">
                             <label for="{{ form.allergy.id_for_label }}" class="form-label">Аллергия/Особенности</label>
                             {{ form.allergy }}
+                            {% if form.allergy.errors %}
+                                <div class="text-danger small">{{ form.allergy.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">Укажите аллергию или напишите "нет"</small>
                         </div>
 
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                             <a href="{% url 'index' %}" class="btn btn-secondary">Отмена</a>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal">
-                                Зарегистрировать
-                            </button>
+                            <button type="submit" class="btn btn-primary">Зарегистрировать пациента</button>
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="confirmModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">✅ Подтверждение</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Вы уверены, что хотите зарегистрировать пациента?</p>
-                <p class="text-muted small">После регистрации нужно будет выбрать палату</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-success" onclick="document.getElementById('addPatientForm').submit()">
-                    ✅ Да, зарегистрировать
-                </button>
             </div>
         </div>
     </div>
